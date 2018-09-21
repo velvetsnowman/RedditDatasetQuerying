@@ -5,8 +5,25 @@ from datetime import datetime
 timeframe = '2016-04'
 sql_transaction = []
 
-connection = sqlite3.connect('{}.db'.format(timeframe))
+connection = sqlite3.connect('reddit.db')
 c = connection.cursor()
+
+def transaction_bldr(sql):
+    global sql_transaction
+    sql_transaction.append(sql)
+    if len(sql_transaction) > 1:
+        for s in sql_transaction:
+            print(7)
+            try:
+                c.execute(s)
+                print(8)
+            except:
+                print(9)
+                pass
+        connection.commit()
+
+
+        sql_transaction = []
 
 def create_table():
     c.execute("CREATE TABLE IF NOT EXISTS parent_reply(parent_id TEXT PRIMARY KEY, comment_id TEXT UNIQUE, parent TEXT, comment TEXT, subreddit TEXT, unix INT, score INT)")
@@ -17,7 +34,7 @@ def format_data(data):
 
 def find_existing_score(pid):
     try:
-        sql = "SELECT score FROM parent_reply WHERE parent_id = '{}' LIMIT 1".format(pid)
+        sql = "SELECT score FROM parent_reply WHERE parent_id = {} LIMIT 1".format(pid)
         c.execute(sql)
         result = c.fetchone()
         if result != None:
@@ -49,49 +66,50 @@ def find_parent(pid):
     except Exception as e:
         return False
 
-def transaction_bldr(sql):
-    global sql_transaction
-    sql_transaction.append(sql)
-    if len(sql_transaction) > 1000:
-        c.execute('BEGIN TRANSACTION')
-        for s in sql_transaction:
-            try:
-                c.execute(s)
-            except:
-                pass
-        connection.commit()
-        sql_transaction = []
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+########################################################################################################################
 
 def sql_insert_replace_comment(commentid,parentid,parent,comment,subreddit,time,score):
     try:
-        sql = "UPDATE parent_reply SET parent_id = ?, comment_id = ?, parent = ?, comment = ?, subreddit = ?, unix = ?, score = ? WHERE parent_id = ?;".format(commentid, parentid, parent, comment, subreddit, time, score)
+        sql = "UPDATE parent_reply SET parent_id = ?, comment_id = ?, parent = ?, comment = ?, subreddit = ?, unix = ?, score = ? WHERE parent_id = ?;".format(parentid, commentid, parent, comment, subreddit, time, score)
         transaction_bldr(sql)
     except Exception as e:
         print('s-UPDATE insertion',str(e))
 
 def sql_insert_has_parent(commentid,parentid,parent,comment,subreddit,time,score):
     try:
-        sql = "INSERT INTO parent_reply (parent_id, comment_id, parent, comment, subreddit, unix, score) VALUES ({}, {}, {}, {}, {}, {}, {});".format(commentid, parentid, parent, comment, subreddit, time, score)
+        sql = "INSERT INTO parent_reply (parent_id, comment_id, parent, comment, subreddit, unix, score) VALUES ('{}', '{}', '{}', '{}', '{}', {}, {});".format(parentid, commentid, parent, comment, subreddit, time, score)
         transaction_bldr(sql)
     except Exception as e:
         print('s-PARENT insertion',str(e))
 
 def sql_insert_no_parent(commentid,parentid,comment,subreddit,time,score):
     try:
-        sql = "INSERT INTO parent_reply (parent_id, comment_id, parent, comment, subreddit, unix, score) VALUES ({}, {}, {}, {}, {}, {}, {});".format(commentid, parentid, comment, subreddit, time, score)
+        sql = "INSERT INTO parent_reply (parent_id, comment_id, comment, subreddit, unix, score) VALUES ('{}', '{}', '{}', '{}', {}, {});".format(parentid, commentid, comment, subreddit, time, score)
+        print(sql)
         transaction_bldr(sql)
     except Exception as e:
         print('s-NO_PARENT insertion',str(e))
 
-
-
-
-
+##################################################################################################################################
 
 
 
@@ -125,5 +143,5 @@ if __name__ == "__main__":
                         else:
                             sql_insert_no_parent(comment_id, parent_id, body, subreddit, created_utc, score)
 
-            if row_counter % 50 == 0:
+            if row_counter % 1000 == 0:
                 print("total rows read: {}, Paired rows: {}, Time: {}".format(row_counter, paired_rows, str(datetime.now())))
