@@ -3,27 +3,9 @@ import json
 from datetime import datetime
 
 timeframe = '2016-04'
-sql_transaction = []
 
-connection = sqlite3.connect('reddit.db')
-c = connection.cursor()
-
-def transaction_bldr(sql):
-    global sql_transaction
-    sql_transaction.append(sql)
-    if len(sql_transaction) > 1:
-        for s in sql_transaction:
-            print(7)
-            try:
-                c.execute(s)
-                print(8)
-            except:
-                print(9)
-                pass
-        connection.commit()
-
-
-        sql_transaction = []
+connection = sqlite3.connect('reddit.db') #object
+c = connection.cursor() #object
 
 def create_table():
     c.execute("CREATE TABLE IF NOT EXISTS parent_reply(parent_id TEXT PRIMARY KEY, comment_id TEXT UNIQUE, parent TEXT, comment TEXT, subreddit TEXT, unix INT, score INT)")
@@ -67,25 +49,7 @@ def find_parent(pid):
         return False
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-########################################################################################################################
+##################################SQL QUERIES###################################
 
 def sql_insert_replace_comment(commentid,parentid,parent,comment,subreddit,time,score):
     try:
@@ -109,16 +73,36 @@ def sql_insert_no_parent(commentid,parentid,comment,subreddit,time,score):
     except Exception as e:
         print('s-NO_PARENT insertion',str(e))
 
-##################################################################################################################################
 
+#######################SQL queries (ABOVE) are dumped into here#################
 
+sql_transaction = []
+
+def transaction_bldr(sql):
+    global sql_transaction
+    sql_transaction.append(sql)
+    if len(sql_transaction) > 1:
+        for s in sql_transaction:
+            print(7)
+            try:
+                c.execute(s)
+                print(8)
+            except:
+                print(9)
+                pass
+        connection.commit()
+        sql_transaction = []
+
+################# This runs the script (python DataExtractor.py)################
 
 if __name__ == "__main__":
     create_table()
     row_counter = 0
     paired_rows = 0
 
-    with open("/Users/danieldenhartog/Downloads/RC_2005-12".format(timeframe.split('-')[0], timeframe), buffering=1000) as f:
+    # simply change the path in line 105 to extract more data
+
+    with open("/users/some_name/project_directory/RC_2005-12".format(timeframe.split('-')[0], timeframe), buffering=1000) as f:
         for row in f:
             row_counter += 1
             row = json.loads(row)
